@@ -1,7 +1,7 @@
 <<< "Eduardo Brito" >>>;
 
 //Sound generators
-//Lead
+//Lead (actually filler sound)
 TriOsc l;
 //Rhythm / Arpeggios
 SinOsc r;
@@ -9,9 +9,14 @@ SinOsc r;
 SawOsc b;
 
 //Initial volume levels
-0.6 => float lead_vol;
-0.5 => float rhythm_vol;
-0.05 => float bass_vol; 
+0.6 => float ini_lead_vol;
+0.5 => float ini_rhythm_vol;
+//Saw wave is very loud
+0.05 => float ini_bass_vol; 
+//Current volume levels
+ini_lead_vol => float lead_vol;
+ini_rhythm_vol => float rhythm_vol;
+ini_bass_vol => float bass_vol;
 
 //Create some notes (3 octaves)
 261.63 => float C4;
@@ -36,162 +41,143 @@ G4 * 2 => float G5;
 A4 * 2 => float A5;
 B4 * 2 => float B5;
 
+//Set some timing durations
+500::ms => dur quarter;
+2::quarter => dur half;
+2::half => dur whole;
+0.5::quarter => dur eighth;
+//1000 steps per quarter note (for SFX)
+quarter / 1000 => dur step;
+
+<<< "Setting up mixer" >>>;
 //Connecting oscilators to outputs
 l => dac;
 r => dac;
 b => dac;
 
-//Set some timings
-500::ms => dur quarter;
-2::quarter => dur half;
-2::half => dur whole;
-0.5::quarter => dur eigth;
+
+//Adjust gain levels
+ini_lead_vol => l.gain;
+ini_rhythm_vol => r.gain;
+ini_bass_vol => b.gain;
 
 /////////////////////
 //Start composition//
 /////////////////////
 
-//Adjust gain levels
-lead_vol => s.gain;
-bass_vol => t.gain;
-
-//Intro
-
-//Tremolo sweep (kind of)
-0.8 => float max_lead_gain;
-0.6 => float min_lead_gain;
-0 => t.gain;
-
-//now => time start;
-// Initial freq is C1
-//(C3 / 2) / 2 => float initial_freq;
-//initial_freq => float current_freq;
-//min_lead_gain => float current_gain;
-//1 => float direction;
-//0.1 => float gain_increment;
-
-//while (now - start < 3::second){
-//    current_freq => s.freq;
-//    current_gain => s.gain;
-//    current_freq + 0.001 => current_freq;
-//    current_gain + gain_increment * direction => current_gain;
-//    if (current_gain > max_lead_gain){
-//        max_lead_gain => current_gain;
-//        -1 * direction => direction;
-//    } else{
-//        if (current_gain < min_lead_gain){
-//            min_lead_gain => current_gain;
-//            -1 * direction =>  direction;
-//        }
-//    }
-    
-//    if (current_freq > C4){
-//        initial_freq => current_freq;
-//    }
-//    1::samp => now;
-//}
-
-//Main loop
-lead_vol => s.gain;
-//lead_vol => chorus.gain;
-bass_vol => t.gain;
-for (0 => int i; i < 4; i++){
+//Main theme
+3 => int reps;
+<<< "Main theme (",reps,"repetitions )" >>>;
+// Silencing the "lead" for the main theme
+0 => l.gain;
+for (0 => int i; i <= reps; i++){
     //Bar 1
-    C4 => s.freq;
-//    C4 - 0.20 => chorus.freq;
-    C3 => t.freq;
+    C4 => r.freq;
+    C3 => b.freq;
     quarter => now;
 
-    E4 => s.freq;
-//    E4 - 0.20 => chorus.freq;
-    eigth => now;
+    E4 => r.freq;
+    eighth => now;
 
-    D4 => s.freq;
-//    D4 - 0.20 => chorus.freq;
-    eigth => now;
+    D4 => r.freq;
+    eighth => now;
 
-    C4 => s.freq;
-//    C4 - 0.20 => chorus.freq;
+    C4 => r.freq;
     half => now;
+    
     //Bar 2
-    D3 => t.freq;
-    D4 => s.freq;
-//    D4 - 0.20 => chorus.freq;
-    quarter => now;
-    
-    F4 => s.freq;
-    quarter => now;
-    
-    E4 => s.freq;
-//    E4 - 0.20 => chorus.freq;
-    E3 => t.freq;
-    eigth => now;
-    F4 => s.freq;
-//    F4 - 0.20 => chorus.freq;
-    F3 => t.freq;
-    eigth => now;
-    E3 => t.freq;
-    A4 => s.freq;
-//    A4 - 0.20 => chorus.freq;
-    quarter => now;
-    
-    //Bar 3
-    E4 => s.freq;
-//    E4 - 0.20 => chorus.freq;
-    E3 => t.freq;
-    eigth => now;
-    
-//    A4 => s.freq;
-//    eigth => now;
-    //B4 => s.freq;
-//    F3 => t.freq;
-    //quarter => now;
+    //Normal ending
+    if (i < reps){
+        D3 => b.freq;
+        D4 => r.freq;
+        quarter => now;
+        
+        F4 => r.freq;
+        quarter => now;
+        
+        E4 => r.freq;
+        E3 => b.freq;
+        eighth => now;
+        F4 => r.freq;
+        F3 => b.freq;
+        eighth => now;
+        A4 => r.freq;
+        E3 => b.freq;
+        quarter => now;
+    }    
 }
-
-C4 => s.freq;
-C3 => t.freq;
+//Alternate ending
+<<< "Ending the main theme on an alternate ending bar" >>>;
+D3 => b.freq;
+D4 => r.freq;
 quarter => now;
 
-E4 => s.freq;
-eigth => now;
-
-D4 => s.freq;
-eigth => now;
-
-C4 => s.freq;
-half => now;
-
-A4 => s.freq;
-eigth => now;
-B4 => s.freq;
-F3 => t.freq;
+F4 => r.freq;
 quarter => now;
 
-A3 => t.freq;
-A4 => s.freq;
-quarter + eigth => now;
-
-C4 => s.freq;
-C3 => t.freq;
+E4 => r.freq;
+E3 => b.freq;
+eighth => now;
+D4 => r.freq;
+D3 => b.freq;
+eighth => now;
+C4 => r.freq;
+C3 => b.freq;
 quarter => now;
 
-//Bar 2
-B3 => t.freq;
-B4 => s.freq;
-quarter => now;
-D4 => s.freq;
-D3 => t.freq;
-quarter => now;
+<<< "Repeat until the end" >>>;
+//Volume of the oscilators is initially going down
+-1 => int dirl;
+-1 => int dirr;
+-1 => int dirb;
+//Variation of volume is going to be different for each oscilator 
+ini_lead_vol / 100 => float lead_step;
+ini_rhythm_vol / 500 => float rhythm_step;
+ini_bass_vol / 1000 => float bass_step;
 
-A3 => t.freq;
-A4 => s.freq;
-quarter => now;
+//Turning on the "lead" voice
+C5 => l.freq;
+lead_vol => l.gain;
 
-A3 * 2 => t.freq;
-A4 *2 => s.freq;
-eigth => now;
-
-A3 => t.freq;
-A4 => s.freq;
-eigth => now;
-
+//Repeat ad eternum
+//"Tremolo" effect
+while(true){
+    //Change the volume
+    lead_vol + lead_step * dirl => lead_vol;
+    rhythm_vol + rhythm_step * dirr => rhythm_vol;
+    bass_vol + bass_step * dirb => bass_vol;
+    
+    //Check if I'm over the max
+    if(lead_vol > ini_lead_vol){
+        ini_lead_vol => lead_vol;
+        -1 => dirl;
+    }
+    if(rhythm_vol > ini_rhythm_vol){
+        ini_rhythm_vol => rhythm_vol;
+        -1 => dirr;
+    }
+    if(bass_vol > ini_bass_vol){
+        ini_bass_vol => bass_vol;
+        -1 => dirb;
+    }
+    //Check if I'm below 0
+    if(lead_vol < 0){
+        0 => lead_vol;
+        1 => dirl;
+    }
+    if(rhythm_vol < 0){
+        0 => rhythm_vol;
+        1 => dirr;
+    }
+    if(bass_vol < 0){
+        0 => bass_vol;
+        1 => dirb;
+    }
+    //Change the volume on the oscilators 
+    lead_vol => l.gain;
+    rhythm_vol => r.gain;
+    bass_vol => b.gain;
+    
+    //Take 1 step to gradually change volume
+    step => now;
+}
