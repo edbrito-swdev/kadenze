@@ -1,41 +1,63 @@
-SawOsc t => dac.chan(0);
-TriOsc l => dac.chan(1);
-//SinOsc s => Pan2 p => dac.chan(0);
-//Noise n => Pan2 p2 => dac;
+//Sound chain
+SawOsc b => dac;
+TriOsc l => dac.right;
+SinOsc s => Pan2 p => dac;
 
+//Hi, I'm...
 <<< "Eduardo Brito" >>>;
-//[48, 52, 55, 59, 62, 65, 69] @=> int chord[];
-[33, 35, 37, 39, 40, 42, 44, 45] @=> int chord[];
-[69, 71, 73, 75, 76, 78, 79, 81, 83, 85, 86, 88, 90, 91 ] @=> int lead[];
 
+//Set RNG seed
+Math.srandom(12188);
+
+//Defining some standard note lengths
 330::ms => dur quarter;
 [quarter/4, quarter/3, quarter/2, quarter/1.5, quarter, quarter*1.5, quarter*2, quarter*3, quarter*4] @=> dur times[];
 
-0.1 => t.gain;
-0.0 => l.gain;
-//0.0 => p2.pan;
-//Std.mtof(9) => s.freq;
+//Note selection for each voice
+[33, 35, 37, 39, 40, 42, 44, 45] @=> int bass_notes[];
+[69, 71, 73, 75, 76, 78, 79, 81] @=> int lead_notes[];
+
+//Defining mixer levels at the beginning
+0.075 => float blvl;
+0.15 => float llvl;
+0.4 => float slvl;
+
+//Assigning them to the unit generators
+blvl => b.gain;
+//llvl => l.gain;
+slvl => s.gain;
+
+//Create an A drone
+Std.mtof(45) => s.freq;
+
+//Infinite loop
 while(true){
-    Math.random2(0, chord.cap()-1) => int note;
-    Std.mtof(chord[note]) => t.freq; 
+    //Select bass note
+    Math.random2(0, bass_notes.cap()-1) => int note;
+    //Assign frequency to the "bass"
+    Std.mtof(bass_notes[note]) => b.freq;
+    //Generate two timings (bass and lead voice) 
     Math.random2(0, times.cap()-1) => int t1;
     Math.random2(0, times.cap()-1) => int t2;
+    //Check which is the longest
     if(t1 > t2){
         t1 => int aux;
         t2 => t1;
         aux => t2;
     }
-//    Math.sin( now / 1::second ) => p.pan;
-//    Math.sin( now / 1::second ) * 0.005 => s.gain;
-    Math.random2(0, lead.cap()-1) => note;
-    Std.mtof(lead[note]) => l.freq;
-    0.1 => l.gain;
+    //Select a "lead" note
+    Math.random2(0, lead_notes.cap()-1) => note;
+    //Send the frequency to the lead channel
+    Std.mtof(lead_notes[note]) => l.freq;
+    //Make the lead channel audible
+    llvl => l.gain;
     
-//    0.1 => n.gain;
-//    times[0] => now;
-//    0.0 => n.gain;
+    //Oscilate the panning of the drone
+    Math.sin(now / 1::second * 2 * pi ) => p.pan;
+    //Advance the shortest time (so the lead note is shorter than the "comping")
     times[t1] => now;
+    //Silence the lead
     0.0 => l.gain;
+    //Advance the time without changing the duration of the "beat"
     times[t2] - times[t1] => now;
-
 }
